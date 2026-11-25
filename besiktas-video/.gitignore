@@ -2,3 +2,4 @@ build/
 *.png
 *.jpg
 *.mp4
+__pycache__/
