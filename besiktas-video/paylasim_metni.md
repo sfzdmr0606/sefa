@@ -1,6 +1,6 @@
 # Paylaşım metinleri
 
-Video: `besiktas_short_9x16.mp4`, 1080x1920 (9:16), 30 fps, 16 sn, H.264 + AAC.
+Video: `besiktas_short_v2.mp4`, 1080x1920 (9:16), 30 fps, 16 sn, H.264 + AAC.
 Aynı dosya YouTube Shorts, Instagram Reels ve TikTok'a doğrudan yüklenebilir.
 Kapak görseli: `kapak_1080x1920.jpg`
 

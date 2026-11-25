@@ -1,14 +1,14 @@
 """Animated 9:16 short (1080x1920, 30 fps, 16 s) from one family photo.
 
-Usage: python3 make_video.py aile.png build/music.wav out.mp4
+Usage: python3 make_video.py aile.png build/detect.npz build/music.wav out.mp4
 Frames are drawn with Pillow/numpy and piped straight into ffmpeg.
 """
 import math, subprocess, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageEnhance
 
-SRC, MUSIC, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
-PREVIEW = sys.argv[4:]  # optional list of times -> write PNGs instead of video
+SRC, DET, MUSIC, OUT = sys.argv[1:5]
+PREVIEW = sys.argv[5:]  # optional list of times -> write PNGs instead of video
 W, H, FPS, DUR = 1080, 1920, 30, 16.0
 BEAT = 0.5
 FONT = "/usr/share/fonts/opentype/inter/InterDisplay-Black.otf"
@@ -75,6 +75,11 @@ def cover(img, w, h):
 
 
 toon = cartoonize(src)
+
+from animate import LivePhoto
+
+LP = LivePhoto(DET, (SH, SW))
+SRC_NP, TOON_NP = np.array(src), np.array(toon)
 
 
 def make_bg(img):
@@ -285,6 +290,9 @@ GIRL, BOY, DAD = (300, 520), (830, 560), (1120, 520)
 
 # ------------------------------------------------------------------ frame
 def render(t):
+    maps = LP.maps(t) if t >= 2.0 else None
+    live = Image.fromarray(LP.warp(SRC_NP, maps)) if maps else src
+    live_toon = lambda: Image.fromarray(LP.warp(TOON_NP, maps))
     # ---------------- A: intro 0-2s
     if t < 2.0:
         frame = Image.fromarray(stripes_bg(t, 220).astype(np.uint8)).convert("RGBA")
@@ -316,7 +324,7 @@ def render(t):
         sx, sy = shake(t, 2.0, 18)
         s = 1.35 - 0.35 * ease_out(lt / 0.45)
         s *= 1 + 0.025 * beat_pulse(t, 2.0)
-        place_card(frame, card(src, 1.0 + 0.08 * lt / 2), W / 2 + sx, 1060 + sy, s)
+        place_card(frame, card(live, 1.0 + 0.08 * lt / 2), W / 2 + sx, 1060 + sy, s)
         pop_text(frame, "AİLECEK", 140, W / 2, 360, t, 2.05, bounce_from=2.0)
         pop_text(frame, "KARTAL", 190, W / 2, 545, t, 3.0, bounce_from=3.0)
         flash(frame, t, 2.0, 0.35)
@@ -329,7 +337,7 @@ def render(t):
         (cx, cy), word = [(GIRL, "SİYAH"), (BOY, "BEYAZ"), (DAD, "TEK AŞK")][idx]
         zoom = 1.06 + 0.10 * lt / 2 + 0.05 * beat_pulse(t, 4.0, 10)
         pan = (-40 + 80 * lt / 2) * (1 if idx != 1 else -1)
-        img = view(src, cx, cy, zoom, ox=pan)
+        img = view(live, cx, cy, zoom, ox=pan)
         # whip blur on entry
         if lt < 0.14 and idx > 0:
             a = np.array(img, dtype=np.float32)
@@ -360,7 +368,7 @@ def render(t):
         frame = Image.fromarray(base.astype(np.uint8)).convert("RGBA")
         sx, sy = shake(t, 10.0, 12)
         kb = 1.0 + 0.10 * lt / 4
-        c_photo, c_toon = card(src, kb), card(toon, kb)
+        c_photo, c_toon = card(live, kb), card(live_toon(), kb) if p_toon > 0 else None
         if p_toon <= 0:
             c = c_photo
         elif p_toon >= 1:
@@ -382,7 +390,7 @@ def render(t):
     lt = t - 14.0
     frame = Image.fromarray(stripes_bg(t, 60, dark=0.35).astype(np.uint8)).convert("RGBA")
     s = 1.18 - 0.2 * ease_out(lt / 0.5)
-    place_card(frame, card(src, 1.12 - 0.08 * ease_out(lt / 2)), W / 2, 1010, s, -2.0)
+    place_card(frame, card(live, 1.12 - 0.08 * ease_out(lt / 2)), W / 2, 1010, s, -2.0)
     band(frame, 345, 330)
     pop_text(frame, "AİLECEK", 110, W / 2, 275, t, 14.05)
     pop_text(frame, "BEŞİKTAŞLIYIZ", 104, W / 2, 400, t, 14.3)
